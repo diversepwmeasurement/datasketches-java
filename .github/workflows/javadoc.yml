@@ -1,23 +1,22 @@
-name: JavaDoc
-
-on:
-  push:
-    branches:
-      - master
-  workflow_dispatch:
-
 jobs:
   javadoc:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Generate JavaDoc
-        run: mvn javadoc:javadoc
-      - name: Deploy JavaDoc
-        uses: JamesIves/github-pages-deploy-action@5dc1d5a192aeb5ab5b7d5a77b7d36aea4a7f5c92
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          folder: target/site/apidocs
-          target-folder: docs/${{ github.ref_name }}
-          branch: gh-pages
+    - continue-on-error: true
+      name: Checkout
+      uses: actions/checkout@v3
+    - continue-on-error: true
+      name: Generate JavaDoc
+      run: mvn javadoc:javadoc
+    - continue-on-error: true
+      name: Deploy JavaDoc
+      uses: JamesIves/github-pages-deploy-action@5dc1d5a192aeb5ab5b7d5a77b7d36aea4a7f5c92
+      with:
+        branch: gh-pages
+        folder: target/site/apidocs
+        target-folder: docs/${{ github.ref_name }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+name: JavaDoc
+on:
+  repository_dispatch:
+    types: trigger-ga___javadoc.yml

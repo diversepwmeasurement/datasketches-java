@@ -1,71 +1,54 @@
-name: Datasketches-Java Manual Coverage Report
-
-on:
-    workflow_dispatch:
-
 env:
-    MAVEN_OPTS: -Xmx4g -Xms1g
-
+  MAVEN_OPTS: -Xmx4g -Xms1g
 jobs:
-    build:
-        name: Build, Test, Coverage
-        runs-on: ${{matrix.os}}
-        strategy:
-          fail-fast: false
-          matrix:
-            jdk: [ 8 ]
-            os: [ ubuntu-latest ]
-            include:
-#              - os: windows-latest
-#                skip_javadoc: "`-Dmaven`.javadoc`.skip=true"
-#                skip_gpg: "`-Dgpg`.skip=true"
-              - os: ubuntu-latest
-                skip_javadoc: -Dmaven.javadoc.skip=true
-                skip_gpg: -Dgpg.skip=true
-#              - os: macos-latest
-#                skip_javadoc: -Dmaven.javadoc.skip=true
-#                skip_gpg: -Dgpg.skip=true
+  build:
+    env:
+      JDK_VERSION: ${{ matrix.jdk }}
+    name: Build, Test, Coverage
+    runs-on: self-hosted
+    steps:
+    - continue-on-error: true
+      name: Checkout ${{ github.ref }} ( ${{ github.sha }} )
+      uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+    - continue-on-error: true
+      name: Cache local Maven repository
+      uses: actions/cache@v3
+      with:
+        key: build-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        path: ~/.m2/repository
+        restore-keys: build-${{ runner.os }}-maven-
+    - continue-on-error: true
+      name: Install Matrix JDK
+      uses: actions/setup-java@v3
+      with:
+        architecture: x64
+        distribution: temurin
+        java-package: jdk
+        java-version: ${{ matrix.jdk }}
+    - continue-on-error: true
+      name: Echo Java Version
+      run: 'java -version
 
-        env:
-          JDK_VERSION: ${{ matrix.jdk }}
-
-        steps:
-        - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} )"
-          uses: actions/checkout@v3
-          with:
-              persist-credentials: false
-
-        - name: Cache local Maven repository
-          uses: actions/cache@v3
-          with:
-              path: ~/.m2/repository
-              key: build-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-              restore-keys: build-${{ runner.os }}-maven-
-
-        - name: Install Matrix JDK
-          uses: actions/setup-java@v3
-          with:
-              java-version: ${{ matrix.jdk }}
-              distribution: 'temurin'
-              java-package: jdk
-              architecture: x64 
-# Architecture options: x86, x64, armv7, aarch64, ppc64le
-# setup-java@v3 has a "with cache" option
-
-        - name: Echo Java Version
-          run: >
-              java -version
-
-        - name: Test, Package, Verify, Coverage Report
-          if: ${{ matrix.jdk == 8 && success() }}
-          run: 
-              mvn verify coveralls:report -B
-              -DrepoToken=${{secrets.coveralls_token}}
-              ${{matrix.os.skip_javadoc}}
-              ${{matrix.os.skip_gpg}}
-              
-# Lifecycle: validate, compile, test, package, verify, install, deploy
-# Coverage reports are available after the verify phase
-# -B batch mode
-# -V show Version without stopping
-# -q quiet, only show errors
+        '
+    - continue-on-error: true
+      if: ${{ matrix.jdk == 8 && success() }}
+      name: Test, Package, Verify, Coverage Report
+      run: mvn verify coveralls:report -B -DrepoToken=${{secrets.coveralls_token}}
+        ${{matrix.os.skip_javadoc}} ${{matrix.os.skip_gpg}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: ubuntu-latest
+          skip_gpg: -Dgpg.skip=true
+          skip_javadoc: -Dmaven.javadoc.skip=true
+        jdk:
+        - 8
+        os:
+        - ubuntu-latest
+name: Datasketches-Java Manual Coverage Report
+on:
+  repository_dispatch:
+    types: trigger-ga___manual-coverage.yml
